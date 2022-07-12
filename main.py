@@ -2,6 +2,7 @@ from models.agent import Agent
 from models.coordinate import Coordinate
 from operator import attrgetter
 from plot import Plot
+import os
 
 def print_grid():
     for row in range(num_rows):
@@ -184,4 +185,5 @@ plot = Plot(grid)
 plot.visualize()
 
 simulate(num_rows, num_cols, goal_coord, 8)
-print(finished_agents[0].trajectory)
+pro = os.system("ffmpeg -r 1 -f image2 -i ./images/step%d.png -s 1000x1000 -y simulation.avi")
+print(pro)
