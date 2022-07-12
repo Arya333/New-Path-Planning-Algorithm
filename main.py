@@ -1,11 +1,12 @@
 from models.agent import Agent
 from models.coordinate import Coordinate
 from operator import attrgetter
+from plot import Plot
 
 def print_grid():
     for row in range(num_rows):
         for col in range(num_cols):
-            num = grid[row][col].num
+            num = grid[row][col].get_num()
             if (grid[row][col].agent == None):
                 print(num, end = " ")
             else:
@@ -86,7 +87,7 @@ def check_ones():
     if (agents[0].get_coord_num() == 1):
         temp = True
     else:
-        return None, -1
+        return None
     index = 0
     while(temp):
         if (index >= len(agents) or agents[index].get_coord_num() != 1):
@@ -153,13 +154,15 @@ def simulate(rows, cols, goal, max_num_steps):
                     grid[cur_row][cur_col].update_agent(agent, True)
                     agent.update_coords(next_coords)
                 agent.add_to_path()
+        plot.set_grid(grid)
+        plot.visualize()
         print("step = " + str(step))
         print_grid()
         print("")
 
-num_rows = 8
-num_cols = 8
-goal_coord = [4, 4]
+num_rows = 5
+num_cols = 5
+goal_coord = [0, 1]
 grid = [[0 for i in range(num_cols)] for j in range(num_rows)] 
 init_grid(num_rows, num_cols, goal_coord)
 
@@ -167,17 +170,9 @@ agent_id_index = 0
 agents = []
 finished_agents = []
 
-agents.append(Agent(agent_id_index, 5, [3, 4], grid[3][4].get_num(), []))
+agents.append(Agent(agent_id_index, 5, [3, 0], grid[3][0].get_num(), []))
 agent_id_index += 1
-agents.append(Agent(agent_id_index, 10, [5, 4], grid[5][4].get_num(), []))
-agent_id_index += 1
-agents.append(Agent(agent_id_index, 15, [4, 3], grid[4][3].get_num(), []))
-agent_id_index += 1
-agents.append(Agent(agent_id_index, 20, [4, 5], grid[4][5].get_num(), []))
-agent_id_index += 1
-agents.append(Agent(agent_id_index, 20, [2, 4], grid[2][4].get_num(), []))
-agent_id_index += 1
-agents.append(Agent(agent_id_index, 20, [6, 4], grid[6][4].get_num(), []))
+agents.append(Agent(agent_id_index, 10, [2, 3], grid[2][3].get_num(), []))
 agent_id_index += 1
 agents.sort(key=attrgetter('coord_num'))
 init_agents()
@@ -185,5 +180,8 @@ print("step = 0")
 print_grid()
 print("")
 
+plot = Plot(grid)
+plot.visualize()
+
 simulate(num_rows, num_cols, goal_coord, 8)
-print(finished_agents[4].trajectory)
+print(finished_agents[0].trajectory)
