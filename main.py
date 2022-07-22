@@ -2,20 +2,25 @@ from models.agent import Agent
 from models.coordinate import Coordinate
 from operator import attrgetter
 from plot import Plot
-import os
+import os, time
+import numpy as np
+import collections
+
 
 def print_grid():
     for row in range(num_rows):
         for col in range(num_cols):
             num = grid[row][col].get_num()
             if (grid[row][col].agent == None):
-                print(num, end = " ")
+                print(num, end=" ")
             else:
-                print("X", end = " ")
+                print("X", end=" ")
         print("")
 
+
 def is_coord_in_bounds(rows, cols, coord):
-    return coord[0] >= 0 and coord[0] < rows and coord[1] >= 0 and coord[1] < cols 
+    return coord[0] >= 0 and coord[0] < rows and coord[1] >= 0 and coord[1] < cols
+
 
 def init_grid(rows, cols, goal):
     if (not is_coord_in_bounds(rows, cols, goal)):
@@ -44,7 +49,7 @@ def init_grid(rows, cols, goal):
         if (is_coord_in_bounds(rows, cols, right)):
             some_coords_in_bounds = True
             grid[right[0]][right[1]] = Coordinate(dist, right, None)
-        
+
         up_to_right = [up[0] + 1, up[1] + 1]
         while (up_to_right[0] != right[0] and up_to_right[1] != right[1]):
             if (is_coord_in_bounds(rows, cols, up_to_right)):
@@ -58,14 +63,14 @@ def init_grid(rows, cols, goal):
                 some_coords_in_bounds = True
                 grid[right_to_down[0]][right_to_down[1]] = Coordinate(dist, right_to_down, None)
             right_to_down = [right_to_down[0] + 1, right_to_down[1] - 1]
-        
+
         down_to_left = [down[0] - 1, down[1] - 1]
         while (down_to_left[0] != left[0] and down_to_left[1] != left[1]):
             if (is_coord_in_bounds(rows, cols, down_to_left)):
                 some_coords_in_bounds = True
                 grid[down_to_left[0]][down_to_left[1]] = Coordinate(dist, down_to_left, None)
             down_to_left = [down_to_left[0] - 1, down_to_left[1] - 1]
-        
+
         left_to_up = [left[0] - 1, left[1] + 1]
         while (left_to_up[0] != up[0] and left_to_up[1] != up[1]):
             if (is_coord_in_bounds(rows, cols, left_to_up)):
@@ -75,12 +80,14 @@ def init_grid(rows, cols, goal):
 
         dist += 1
 
+
 def init_agents():
     for agent in agents:
         row = agent.curr_coords[0]
         col = agent.curr_coords[1]
         grid[row][col].update_agent(agent, False)
         grid[row][col].agent.add_to_path()
+
 
 def check_ones():
     agents_with_ones = []
@@ -90,7 +97,7 @@ def check_ones():
     else:
         return None
     index = 0
-    while(temp):
+    while (temp):
         if (index >= len(agents) or agents[index].get_coord_num() != 1):
             temp = False
             break
@@ -98,8 +105,9 @@ def check_ones():
             agents_with_ones.append(agents[index])
             index += 1
     agents_with_ones.sort(key=attrgetter('velocity'), reverse=True)
-    print(agents_with_ones)
+    # print(agents_with_ones)
     return agents_with_ones[0]
+
 
 def simulate(rows, cols, goal, max_num_steps):
     step = 0
@@ -107,7 +115,14 @@ def simulate(rows, cols, goal, max_num_steps):
         if (not agents):
             break
         step += 1
-        
+
+        # Check for collision
+
+        coords_at_current_time = [a.get_curr_coords for a in agents]
+        collisions = [x for n, x in enumerate(coords_at_current_time) if x in coords_at_current_time[:n]]
+        num_collisions = len(collisions)
+        print(num_collisions)
+
         agent_ones = check_ones()
         if (agent_ones != None):
             curr_coords = agent_ones.get_curr_coords()
@@ -124,7 +139,7 @@ def simulate(rows, cols, goal, max_num_steps):
                     break
                 index_remove += 1
             del agents[index_remove]
-            
+
         for agent in agents:
             if (agent.get_coord_num() != 1):
                 cur_row = agent.curr_coords[0]
@@ -135,16 +150,20 @@ def simulate(rows, cols, goal, max_num_steps):
                 left = [cur_row, cur_col - 1]
                 right = [cur_row, cur_col + 1]
 
-                if (is_coord_in_bounds(rows, cols, up) and grid[up[0]][up[1]].agent == None and grid[up[0]][up[1]].get_num() < agent.get_coord_num()):
+                if (is_coord_in_bounds(rows, cols, up) and grid[up[0]][up[1]].agent == None and grid[up[0]][
+                    up[1]].get_num() < agent.get_coord_num()):
                     next_coords[0] = up[0]
                     next_coords[1] = up[1]
-                elif (is_coord_in_bounds(rows, cols, down) and grid[down[0]][down[1]].agent == None and grid[down[0]][down[1]].get_num() < agent.get_coord_num()):
+                elif (is_coord_in_bounds(rows, cols, down) and grid[down[0]][down[1]].agent == None and grid[down[0]][
+                    down[1]].get_num() < agent.get_coord_num()):
                     next_coords[0] = down[0]
                     next_coords[1] = down[1]
-                elif (is_coord_in_bounds(rows, cols, left) and grid[left[0]][left[1]].agent == None and grid[left[0]][left[1]].get_num() < agent.get_coord_num()):
+                elif (is_coord_in_bounds(rows, cols, left) and grid[left[0]][left[1]].agent == None and grid[left[0]][
+                    left[1]].get_num() < agent.get_coord_num()):
                     next_coords[0] = left[0]
                     next_coords[1] = left[1]
-                elif (is_coord_in_bounds(rows, cols, right) and grid[right[0]][right[1]].agent == None and grid[right[0]][right[1]].get_num() < agent.get_coord_num()):
+                elif (is_coord_in_bounds(rows, cols, right) and grid[right[0]][right[1]].agent == None and
+                      grid[right[0]][right[1]].get_num() < agent.get_coord_num()):
                     next_coords[0] = right[0]
                     next_coords[1] = right[1]
 
@@ -158,23 +177,30 @@ def simulate(rows, cols, goal, max_num_steps):
         plot.set_grid(grid)
         plot.visualize()
         print("step = " + str(step))
-        print_grid()
+        # print_grid()
         print("")
 
-num_rows = 5
-num_cols = 5
-goal_coord = [0, 1]
-grid = [[0 for i in range(num_cols)] for j in range(num_rows)] 
+
+num_rows = 6
+num_cols = 6
+num_agents = 6
+vels = [i for i in range(1, 1 + num_agents)]
+# goal_coord = list(np.random.randint(1, num_rows, 2))
+goal_coord = [0, 3]
+grid = [[0 for i in range(num_cols)] for j in range(num_rows)]
 init_grid(num_rows, num_cols, goal_coord)
 
 agent_id_index = 0
 agents = []
 finished_agents = []
 
-agents.append(Agent(agent_id_index, 5, [3, 0], grid[3][0].get_num(), []))
-agent_id_index += 1
-agents.append(Agent(agent_id_index, 10, [2, 3], grid[2][3].get_num(), []))
-agent_id_index += 1
+agents_coords_initial = [list(np.random.randint(1, num_rows, 2)) for _ in range(num_rows)]
+
+for i in range(num_agents):
+    agents.append(Agent(agent_id_index, vels[i], agents_coords_initial[i],
+                        grid[agents_coords_initial[i][0]][agents_coords_initial[i][1]].get_num(), []))
+    agent_id_index += 1
+
 agents.sort(key=attrgetter('coord_num'))
 init_agents()
 print("step = 0")
@@ -183,7 +209,7 @@ print("")
 
 plot = Plot(grid)
 plot.visualize()
-
-simulate(num_rows, num_cols, goal_coord, 8)
+start = time.time()
+simulate(num_rows, num_cols, goal_coord, 100)
+print("time taken:", time.time() - start)
 pro = os.system("ffmpeg -r 1 -f image2 -i ./images/step%d.png -s 1000x1000 -y simulation.avi")
-print(pro)
