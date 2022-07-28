@@ -5,6 +5,7 @@ from plot import Plot
 import os, time
 import numpy as np
 import collections
+import random
 
 
 def print_grid():
@@ -17,6 +18,29 @@ def print_grid():
                 print("X", end=" ")
         print("")
 
+def in_agents_coords(row, col):
+    for agent in agents:
+        agent_row = agent.curr_coords[0]
+        agent_col = agent.curr_coords[1]
+        if (row == agent_row and col == agent_col):
+            return True
+    return False
+
+def in_agents_coords_initial(row, col):
+    for coord in agents_coords_initial:
+        agent_row = coord[0]
+        agent_col = coord[1]
+        if (row == agent_row and col == agent_col):
+            return True
+    return False
+
+def in_obs_coords(row, col):
+    for coord in obstacles:
+        obs_row = coord[0]
+        obs_col = coord[1]
+        if (row == obs_row and col == obs_col):
+            return True
+    return False
 
 def is_coord_in_bounds(rows, cols, coord):
     return coord[0] >= 0 and coord[0] < rows and coord[1] >= 0 and coord[1] < cols
@@ -27,7 +51,7 @@ def init_grid(rows, cols, goal):
         raise Exception("goal coords not in bounds of grid dimensions")
     goal_row = goal[0]
     goal_col = goal[1]
-    grid[goal_row][goal_col] = Coordinate(0, [goal_row, goal_col], None)
+    grid[goal_row][goal_col] = Coordinate(0, [goal_row, goal_col], None, False)
 
     some_coords_in_bounds = True
     dist = 1
@@ -39,43 +63,43 @@ def init_grid(rows, cols, goal):
         right = [goal[0], goal[1] + dist]
         if (is_coord_in_bounds(rows, cols, up)):
             some_coords_in_bounds = True
-            grid[up[0]][up[1]] = Coordinate(dist, up, None)
+            grid[up[0]][up[1]] = Coordinate(dist, up, None, False)
         if (is_coord_in_bounds(rows, cols, down)):
             some_coords_in_bounds = True
-            grid[down[0]][down[1]] = Coordinate(dist, down, None)
+            grid[down[0]][down[1]] = Coordinate(dist, down, None, False)
         if (is_coord_in_bounds(rows, cols, left)):
             some_coords_in_bounds = True
-            grid[left[0]][left[1]] = Coordinate(dist, left, None)
+            grid[left[0]][left[1]] = Coordinate(dist, left, None, False)
         if (is_coord_in_bounds(rows, cols, right)):
             some_coords_in_bounds = True
-            grid[right[0]][right[1]] = Coordinate(dist, right, None)
+            grid[right[0]][right[1]] = Coordinate(dist, right, None, False)
 
         up_to_right = [up[0] + 1, up[1] + 1]
         while (up_to_right[0] != right[0] and up_to_right[1] != right[1]):
             if (is_coord_in_bounds(rows, cols, up_to_right)):
                 some_coords_in_bounds = True
-                grid[up_to_right[0]][up_to_right[1]] = Coordinate(dist, up_to_right, None)
+                grid[up_to_right[0]][up_to_right[1]] = Coordinate(dist, up_to_right, None, False)
             up_to_right = [up_to_right[0] + 1, up_to_right[1] + 1]
 
         right_to_down = [right[0] + 1, right[1] - 1]
         while (right_to_down[0] != down[0] and right_to_down[1] != down[1]):
             if (is_coord_in_bounds(rows, cols, right_to_down)):
                 some_coords_in_bounds = True
-                grid[right_to_down[0]][right_to_down[1]] = Coordinate(dist, right_to_down, None)
+                grid[right_to_down[0]][right_to_down[1]] = Coordinate(dist, right_to_down, None, False)
             right_to_down = [right_to_down[0] + 1, right_to_down[1] - 1]
 
         down_to_left = [down[0] - 1, down[1] - 1]
         while (down_to_left[0] != left[0] and down_to_left[1] != left[1]):
             if (is_coord_in_bounds(rows, cols, down_to_left)):
                 some_coords_in_bounds = True
-                grid[down_to_left[0]][down_to_left[1]] = Coordinate(dist, down_to_left, None)
+                grid[down_to_left[0]][down_to_left[1]] = Coordinate(dist, down_to_left, None, False)
             down_to_left = [down_to_left[0] - 1, down_to_left[1] - 1]
 
         left_to_up = [left[0] - 1, left[1] + 1]
         while (left_to_up[0] != up[0] and left_to_up[1] != up[1]):
             if (is_coord_in_bounds(rows, cols, left_to_up)):
                 some_coords_in_bounds = True
-                grid[left_to_up[0]][left_to_up[1]] = Coordinate(dist, left_to_up, None)
+                grid[left_to_up[0]][left_to_up[1]] = Coordinate(dist, left_to_up, None, False)
             left_to_up = [left_to_up[0] - 1, left_to_up[1] + 1]
 
         dist += 1
@@ -108,13 +132,58 @@ def check_ones():
     # print(agents_with_ones)
     return agents_with_ones[0]
 
+def detect_failure(rows, cols):
+    fail = True
+    index = 0
+    for agent in agents:
+        fail = True # if you want all other agents to reach goal before finding failed agent, comment this line out
+        row = agent.get_curr_coords()[0]
+        col = agent.get_curr_coords()[1]
+        up = [row - 1, col]
+        down = [row + 1, col]
+        left = [row, col - 1]
+        right = [row, col + 1]
+        if (is_coord_in_bounds(rows, cols, up) and grid[up[0]][up[1]].get_num() < agent.get_coord_num()):
+            fail = False
+            index += 1
+            continue
+        if (is_coord_in_bounds(rows, cols, down) and grid[down[0]][down[1]].get_num() < agent.get_coord_num()):
+            fail = False
+            index += 1
+            continue
+        if (is_coord_in_bounds(rows, cols, left) and grid[left[0]][left[1]].get_num() < agent.get_coord_num()):
+            fail = False
+            index += 1
+            continue
+        if (is_coord_in_bounds(rows, cols, right) and grid[right[0]][right[1]].get_num() < agent.get_coord_num()):
+            fail = False
+            index += 1
+            continue
+        print(agent.id)
+        print(index)
+        print("")
+        break
+    if fail:
+        return index
+    else:
+        return -1
+
+
+        
 
 def simulate(rows, cols, goal, max_num_steps):
     step = 0
     while (step < max_num_steps):
         if (not agents):
             break
+        fail = detect_failure(rows, cols)
+        print("fail = " + str(fail))
+        if (fail != -1):
+            fail_agent_id = agents[fail].get_id()
+            plot.failure(fail_agent_id)
+            break
         step += 1
+        agents.sort(key=attrgetter('coord_num'))
 
         # Check for collision
 
@@ -177,6 +246,7 @@ def simulate(rows, cols, goal, max_num_steps):
         plot.set_grid(grid)
         plot.visualize()
         print("step = " + str(step))
+        print(agents)
         # print_grid()
         print("")
 
@@ -194,7 +264,14 @@ agent_id_index = 0
 agents = []
 finished_agents = []
 
-agents_coords_initial = [list(np.random.randint(1, num_rows, 2)) for _ in range(num_rows)]
+agents_coords_initial = []
+temp = 0
+while temp < num_agents:
+    rand_row = random.randint(0, num_rows - 1)
+    rand_col = random.randint(0, num_cols - 1)
+    if (not (in_agents_coords_initial(rand_row, rand_col) or (rand_row == goal_coord[0] and rand_col == goal_coord[1]))):
+        agents_coords_initial.append([rand_row, rand_col])
+        temp += 1
 
 for i in range(num_agents):
     agents.append(Agent(agent_id_index, vels[i], agents_coords_initial[i],
@@ -203,7 +280,22 @@ for i in range(num_agents):
 
 agents.sort(key=attrgetter('coord_num'))
 init_agents()
+
+num_obstacles = 4
+obs_num_id = num_rows + num_cols
+temp = 0
+obstacles = []
+while temp < num_obstacles:
+    rand_row = random.randint(0, num_rows - 1)
+    rand_col = random.randint(0, num_cols - 1)
+    if (not (in_agents_coords(rand_row, rand_col) or in_obs_coords(rand_row, rand_col) or (rand_row == goal_coord[0] and rand_col == goal_coord[1]))):
+        grid[rand_row][rand_col] = Coordinate(obs_num_id, [rand_row, rand_col], None, True)
+        obstacles.append([rand_row, rand_col])
+        temp += 1
+print(obstacles)
+
 print("step = 0")
+print(agents)
 print_grid()
 print("")
 
