@@ -2,6 +2,7 @@ from models.agent import Agent
 from models.coordinate import Coordinate
 from operator import attrgetter
 from plot import Plot
+from intermediate import Intermediate
 import os, time
 import numpy as np
 import collections
@@ -44,7 +45,6 @@ def in_obs_coords(row, col):
 
 def is_coord_in_bounds(rows, cols, coord):
     return coord[0] >= 0 and coord[0] < rows and coord[1] >= 0 and coord[1] < cols
-
 
 def init_grid(rows, cols, goal):
     if (not is_coord_in_bounds(rows, cols, goal)):
@@ -104,14 +104,12 @@ def init_grid(rows, cols, goal):
 
         dist += 1
 
-
 def init_agents():
     for agent in agents:
         row = agent.curr_coords[0]
         col = agent.curr_coords[1]
         grid[row][col].update_agent(agent, False)
         grid[row][col].agent.add_to_path()
-
 
 def check_ones():
     agents_with_ones = []
@@ -143,19 +141,19 @@ def detect_failure(rows, cols):
         down = [row + 1, col]
         left = [row, col - 1]
         right = [row, col + 1]
-        if (is_coord_in_bounds(rows, cols, up) and grid[up[0]][up[1]].get_num() < agent.get_coord_num()):
+        if (is_coord_in_bounds(rows, cols, up) and (grid[up[0]][up[1]].get_num() < agent.get_coord_num()) and (grid[up[0]][up[1]].agent == None)):
             fail = False
             index += 1
             continue
-        if (is_coord_in_bounds(rows, cols, down) and grid[down[0]][down[1]].get_num() < agent.get_coord_num()):
+        if (is_coord_in_bounds(rows, cols, down) and (grid[down[0]][down[1]].get_num() < agent.get_coord_num()) and (grid[down[0]][down[1]].agent == None)):
             fail = False
             index += 1
             continue
-        if (is_coord_in_bounds(rows, cols, left) and grid[left[0]][left[1]].get_num() < agent.get_coord_num()):
+        if (is_coord_in_bounds(rows, cols, left) and (grid[left[0]][left[1]].get_num() < agent.get_coord_num()) and (grid[left[0]][left[1]].agent == None)):
             fail = False
             index += 1
             continue
-        if (is_coord_in_bounds(rows, cols, right) and grid[right[0]][right[1]].get_num() < agent.get_coord_num()):
+        if (is_coord_in_bounds(rows, cols, right) and (grid[right[0]][right[1]].get_num() < agent.get_coord_num()) and (grid[right[0]][right[1]].agent == None)):
             fail = False
             index += 1
             continue
@@ -167,21 +165,60 @@ def detect_failure(rows, cols):
         return index
     else:
         return -1
+    
+def detect_failure_agent(rows, cols, index):
+    print("det fail agent")
+    print(agents)
+    agent = agents[index]
+    row = agent.get_curr_coords()[0]
+    col = agent.get_curr_coords()[1]
+    up = [row - 1, col]
+    down = [row + 1, col]
+    left = [row, col - 1]
+    right = [row, col + 1]
+    if (is_coord_in_bounds(rows, cols, up) and (grid[up[0]][up[1]].get_num() < agent.get_coord_num()) and (grid[up[0]][up[1]].agent == None)):
+        return -1
+    if (is_coord_in_bounds(rows, cols, down) and (grid[down[0]][down[1]].get_num() < agent.get_coord_num()) and (grid[down[0]][down[1]].agent == None)):
+        return -1  
+    if (is_coord_in_bounds(rows, cols, left) and (grid[left[0]][left[1]].get_num() < agent.get_coord_num()) and (grid[left[0]][left[1]].agent == None)):
+        return -1
+    if (is_coord_in_bounds(rows, cols, right) and (grid[right[0]][right[1]].get_num() < agent.get_coord_num()) and (grid[right[0]][right[1]].agent == None)):
+        return -1
+    return 0
 
-
+def cause_intermediate(rows, cols):
+    fail = detect_failure_agent(rows, cols, 0)
+    temp = 0
+    while (fail != -1 and temp < len(agents)): #problem here
+        fail = detect_failure_agent(rows, cols, temp)
+        temp += 1
+    return fail != -1
         
-
 def simulate(rows, cols, goal, max_num_steps):
     step = 0
     while (step < max_num_steps):
         if (not agents):
             break
-        fail = detect_failure(rows, cols)
-        print("fail = " + str(fail))
-        if (fail != -1):
-            fail_agent_id = agents[fail].get_id()
+
+        # Intermediate goals / delayed stop
+
+        stuck = cause_intermediate(rows, cols)
+        if (stuck):
+            fail_agent_id = agents[detect_failure(rows, cols)].get_id()
             plot.failure(fail_agent_id)
+            intermediate = Intermediate(grid, agents, goal_coord, step)
+            intermediate.find_intermediate_candidates()
             break
+
+        # Stop at first failure
+
+        # fail = detect_failure(rows, cols)
+        # print("fail = " + str(fail))
+        # if (fail != -1):
+        #     fail_agent_id = agents[fail].get_id()
+        #     plot.failure(fail_agent_id)
+        #     break
+
         step += 1
         agents.sort(key=attrgetter('coord_num'))
 
@@ -255,8 +292,8 @@ num_rows = 6
 num_cols = 6
 num_agents = 6
 vels = [i for i in range(1, 1 + num_agents)]
-# goal_coord = list(np.random.randint(1, num_rows, 2))
-goal_coord = [0, 3]
+goal_coord = list(np.random.randint(1, num_rows, 2))
+#goal_coord = [0, 3]
 grid = [[0 for i in range(num_cols)] for j in range(num_rows)]
 init_grid(num_rows, num_cols, goal_coord)
 
@@ -281,7 +318,7 @@ for i in range(num_agents):
 agents.sort(key=attrgetter('coord_num'))
 init_agents()
 
-num_obstacles = 4
+num_obstacles = 10
 obs_num_id = num_rows + num_cols
 temp = 0
 obstacles = []
@@ -302,6 +339,6 @@ print("")
 plot = Plot(grid)
 plot.visualize()
 start = time.time()
-simulate(num_rows, num_cols, goal_coord, 100)
+simulate(num_rows, num_cols, goal_coord, 20)
 print("time taken:", time.time() - start)
 pro = os.system("ffmpeg -r 1 -f image2 -i ./images/step%d.png -s 1000x1000 -y simulation.avi")
