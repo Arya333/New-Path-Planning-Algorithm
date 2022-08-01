@@ -206,8 +206,9 @@ def simulate(rows, cols, goal, max_num_steps):
         if (stuck):
             fail_agent_id = agents[detect_failure(rows, cols)].get_id()
             plot.failure(fail_agent_id)
-            intermediate = Intermediate(grid, agents, goal_coord, step)
+            intermediate = Intermediate(grid, agents, goal_coord, step, finished_agents)
             intermediate.find_intermediate_candidates()
+            intermediate.create_agent_intermediate_goal_mapping()
             break
 
         # Stop at first failure
@@ -288,9 +289,9 @@ def simulate(rows, cols, goal, max_num_steps):
         print("")
 
 
-num_rows = 6
-num_cols = 6
-num_agents = 6
+num_rows = 10
+num_cols = 10
+num_agents = 15
 vels = [i for i in range(1, 1 + num_agents)]
 goal_coord = list(np.random.randint(1, num_rows, 2))
 #goal_coord = [0, 3]
@@ -318,7 +319,7 @@ for i in range(num_agents):
 agents.sort(key=attrgetter('coord_num'))
 init_agents()
 
-num_obstacles = 10
+num_obstacles = 20
 obs_num_id = num_rows + num_cols
 temp = 0
 obstacles = []
