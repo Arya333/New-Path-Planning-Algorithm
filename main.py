@@ -206,9 +206,10 @@ def simulate(rows, cols, goal, max_num_steps):
         if (stuck):
             fail_agent_id = agents[detect_failure(rows, cols)].get_id()
             plot.failure(fail_agent_id)
-            intermediate = Intermediate(grid, agents, goal_coord, step, finished_agents)
+            intermediate = Intermediate(grid, agents, goal_coord, step, max_num_steps, finished_agents)
             intermediate.find_intermediate_candidates()
             intermediate.create_agent_intermediate_goal_mapping()
+            intermediate.simulate()
             break
 
         # Stop at first failure
@@ -337,9 +338,9 @@ print(agents)
 print_grid()
 print("")
 
-plot = Plot(grid)
+plot = Plot(grid, 0)
 plot.visualize()
 start = time.time()
-simulate(num_rows, num_cols, goal_coord, 20)
+simulate(num_rows, num_cols, goal_coord, 50)
 print("time taken:", time.time() - start)
 pro = os.system("ffmpeg -r 1 -f image2 -i ./images/step%d.png -s 1000x1000 -y simulation.avi")

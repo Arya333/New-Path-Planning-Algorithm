@@ -6,7 +6,8 @@ class Plot:
     grid_nums = []
     step = 0
 
-    def __init__(self, grid):
+    def __init__(self, grid, step):
+        self.step = step
         self.grid = grid
         self.grid_nums = [[0 for i in range(len(grid[0]))] for j in range(len(grid))] 
         for row in range(len(self.grid)):
