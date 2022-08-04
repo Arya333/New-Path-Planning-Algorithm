@@ -320,7 +320,7 @@ for i in range(num_agents):
 agents.sort(key=attrgetter('coord_num'))
 init_agents()
 
-num_obstacles = 20
+num_obstacles = 30
 obs_num_id = num_rows + num_cols
 temp = 0
 obstacles = []

@@ -115,6 +115,16 @@ class Intermediate:
                 shortest_coords = coords
         return shortest_coords
     
+    def find_closest_intermediate_coord2(self, new_coords):
+        shortest_dist = 1000000000
+        shortest_coords = []
+        for coords in self.intermediate_candidates_2:
+            dist = math.dist(new_coords, coords)
+            if (dist < shortest_dist):
+                shortest_dist = dist
+                shortest_coords = coords
+        return shortest_coords
+    
     def create_agent_intermediate_goal_mapping(self):
         for agent in self.agents:
            if (self.is_agent_stuck(agent)):
@@ -172,6 +182,8 @@ class Intermediate:
                 and not self.grid[move[0]][move[1]].obstacle and not (move[0] == recent_coords[0] and move[1] == recent_coords[1])):
                 next_coords = move
                 break
+        new_interm_target = self.find_closest_intermediate_coord2(next_coords)
+        self.ids_to_intermediate_coords[id] = new_interm_target
         return next_coords
 
 
@@ -187,6 +199,8 @@ class Intermediate:
         while (self.step < self.max_num_steps):
             if (not self.agents):
                 break
+            if (len(self.stuck_agent_ids) == len(self.agents)):
+                break
             
             self.step += 1
             self.agents.sort(key=attrgetter('coord_num'))
@@ -195,7 +209,6 @@ class Intermediate:
 
             agent_ones = self.check_ones()
             if (agent_ones != None):
-                print("ONES")
                 curr_coords = agent_ones.get_curr_coords()
                 self.grid[curr_coords[0]][curr_coords[1]].update_agent(agent_ones, True)
                 self.grid[self.goal_coords[0]][self.goal_coords[1]].update_agent(agent_ones, False)
