@@ -144,7 +144,6 @@ def check_ones():
             agents_with_ones.append(agents[index])
             index += 1
     agents_with_ones.sort(key=attrgetter('velocity'), reverse=True)
-    # print(agents_with_ones)
     return agents_with_ones[0]
 
 # Checks if an agent is stuck (all surrounding tiles have higher tile numbers)
@@ -177,9 +176,6 @@ def detect_failure(rows, cols):
             fail = False
             index += 1
             continue
-        print(agent.id)
-        print(index)
-        print("")
         break
     if fail:
         return index
@@ -190,8 +186,6 @@ def detect_failure(rows, cols):
 # Returns -1 if agent is not stuck and 0 if stuck
 # Used in cause_intermediate function to determine whether or not to begin intermediate target phase
 def detect_failure_agent(rows, cols, index):
-    print("det fail agent")
-    print(agents)
     agent = agents[index]
     row = agent.get_curr_coords()[0]
     col = agent.get_curr_coords()[1]
@@ -365,7 +359,7 @@ agents.sort(key=attrgetter('coord_num'))
 init_agents()
 
 # USER INPUT: number of obstacles
-num_obstacles = 40
+num_obstacles = 30
 # Set up obstacles in grid
 obs_num_id = num_rows + num_cols
 temp = 0
