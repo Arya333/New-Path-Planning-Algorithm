@@ -324,7 +324,7 @@ class Intermediate:
                         agent.coord_num = self.grid[new_coord_row][new_coord_col].get_num()
                     agent.add_to_path()
             plot.set_grid(self.grid)
-            plot.visualize()
+            plot.intermediate_target_visualize(self.finished_agents, self.agents, self.intermediate_candidates_2)
             print("step = " + str(self.step))
             print("")
             print("Agents")
